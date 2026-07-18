@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Aegis.Localizer.Cli</RootNamespace>
+    <AssemblyName>aegis-localizer</AssemblyName>
+    <InvariantGlobalization>false</InvariantGlobalization>
+
+    <!-- Shipped as `dotnet tool install -g Aegis.Localizer`. -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>aegis-localizer</ToolCommandName>
+    <PackageId>Aegis.Localizer</PackageId>
+    <Version>0.2.0</Version>
+    <Authors>Alexander Orlov</Authors>
+    <Company>Aegis AO Soft LLC</Company>
+    <Description>Finds hardcoded UI strings in a codebase with Claude and localizes them into any language.</Description>
+    <PackageTags>localization;i18n;translation;claude;ai</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Aegis.Localizer.Core\Aegis.Localizer.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

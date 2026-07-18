@@ -1,0 +1,13 @@
+{
+  "_copyright": "Copyright (c) 2025-2026 Aegis AO Soft LLC and Alexander Orlov. All rights reserved. See LICENSE.",
+  "profiles": {
+    "Aegis.Localizer.Web": {
+      "commandName": "Project",
+      "applicationUrl": "http://localhost:5099",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Localizer__LocalMode": "true"
+      }
+    }
+  }
+}

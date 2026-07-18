@@ -1,0 +1,36 @@
+<!--
+  Copyright (c) 2025-2026 Aegis AO Soft LLC and Alexander Orlov.
+  34 Middletown Ave, Atlantic Highlands, NJ 07716
+
+  THIS SOFTWARE IS THE CONFIDENTIAL AND PROPRIETARY INFORMATION OF
+  Aegis AO Soft LLC and Alexander Orlov.
+
+  This code may be used, reproduced, modified, or distributed ONLY with the
+  prior written permission of Aegis AO Soft LLC / Alexander Orlov.
+
+  Author: Alexander Orlov
+  Aegis AO Soft LLC
+-->
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Aegis.Localizer.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Aegis.Localizer.Core\Aegis.Localizer.Core.csproj" />
+    <ProjectReference Include="..\..\src\Aegis.Localizer.Cli\Aegis.Localizer.Cli.csproj" />
+  </ItemGroup>
+
+</Project>

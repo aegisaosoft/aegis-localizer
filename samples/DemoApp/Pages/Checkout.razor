@@ -1,0 +1,29 @@
+@page "/checkout"
+@*
+  Copyright (c) 2025-2026 Aegis AO Soft LLC and Alexander Orlov.
+  34 Middletown Ave, Atlantic Highlands, NJ 07716
+
+  THIS SOFTWARE IS THE CONFIDENTIAL AND PROPRIETARY INFORMATION OF
+  Aegis AO Soft LLC and Alexander Orlov.
+
+  This code may be used, reproduced, modified, or distributed ONLY with the
+  prior written permission of Aegis AO Soft LLC / Alexander Orlov.
+
+  Author: Alexander Orlov
+  Aegis AO Soft LLC
+*@
+
+<h1>Complete your booking</h1>
+
+<p>Review the details below before you confirm.</p>
+
+<label for="promo">Promo code</label>
+<input id="promo" placeholder="Enter your promo code" title="Optional discount code" />
+
+<button class="btn btn-primary" type="submit">Confirm and pay</button>
+
+<span>@Total</span>
+
+@code {
+    private string Total => "0.00";
+}

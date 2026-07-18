@@ -1,0 +1,28 @@
+/*
+ * Copyright (c) 2025-2026 Aegis AO Soft LLC and Alexander Orlov.
+ * 34 Middletown Ave, Atlantic Highlands, NJ 07716
+ *
+ * THIS SOFTWARE IS THE CONFIDENTIAL AND PROPRIETARY INFORMATION OF
+ * Aegis AO Soft LLC and Alexander Orlov.
+ *
+ * This code may be used, reproduced, modified, or distributed ONLY with the
+ * prior written permission of Aegis AO Soft LLC / Alexander Orlov.
+ *
+ * Author: Alexander Orlov
+ * Aegis AO Soft LLC
+ */
+
+// swift-tools-version: 5.9
+
+import PackageDescription
+
+let package = Package(
+    name: "SwiftApp",
+    platforms: [.iOS(.v16), .macOS(.v13)],
+    products: [
+        .library(name: "SwiftApp", targets: ["SwiftApp"])
+    ],
+    targets: [
+        .target(name: "SwiftApp", path: "Sources/SwiftApp")
+    ]
+)

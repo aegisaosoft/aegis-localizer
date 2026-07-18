@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (c) 2025-2026 Aegis AO Soft LLC and Alexander Orlov.
+  34 Middletown Ave, Atlantic Highlands, NJ 07716
+
+  THIS SOFTWARE IS THE CONFIDENTIAL AND PROPRIETARY INFORMATION OF
+  Aegis AO Soft LLC and Alexander Orlov.
+
+  This code may be used, reproduced, modified, or distributed ONLY with the
+  prior written permission of Aegis AO Soft LLC / Alexander Orlov.
+
+  Author: Alexander Orlov
+  Aegis AO Soft LLC
+-->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:title="Your bookings"
+        app:subtitle="Upcoming trips and returns"
+        app:navigationContentDescription="Open the navigation drawer" />
+
+    <TextView
+        android:id="@+id/headline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pick up your car in 3 easy steps"
+        android:textAppearance="?attr/textAppearanceHeadline6"
+        tools:text="Design-time preview only, never translated" />
+
+    <!-- Already localized: a second run must leave this alone. -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/already_localized_notice" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Driver licence number"
+        app:helperText="As printed on the front of the licence">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textCapCharacters" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <Button
+        android:id="@+id/confirm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Confirm booking"
+        android:contentDescription="Confirms the booking and charges the deposit" />
+
+</LinearLayout>

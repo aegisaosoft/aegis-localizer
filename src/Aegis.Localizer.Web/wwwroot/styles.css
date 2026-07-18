@@ -1,0 +1,146 @@
+/*
+ * Copyright (c) 2025-2026 Aegis AO Soft LLC and Alexander Orlov.
+ * 34 Middletown Ave, Atlantic Highlands, NJ 07716
+ *
+ * THIS SOFTWARE IS THE CONFIDENTIAL AND PROPRIETARY INFORMATION OF
+ * Aegis AO Soft LLC and Alexander Orlov.
+ *
+ * This code may be used, reproduced, modified, or distributed ONLY with the
+ * prior written permission of Aegis AO Soft LLC / Alexander Orlov.
+ *
+ * Author: Alexander Orlov
+ * Aegis AO Soft LLC
+ */
+
+:root {
+  color-scheme: light dark;
+  --bg: #fbfbfa;
+  --panel: #ffffff;
+  --ink: #1a1a18;
+  --muted: #6b6b66;
+  --line: #e3e3df;
+  --accent: #2f5d50;
+  --danger: #8a3d2e;
+  --warn: #8a6d1f;
+  --radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16171a;
+    --panel: #1e2023;
+    --ink: #eceae5;
+    --muted: #9b9a94;
+    --line: #32353a;
+    --accent: #7fbfa8;
+    --danger: #e08b76;
+    --warn: #d9bf72;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 2rem 1.25rem 4rem;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.55 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+header, main { max-width: 62rem; margin: 0 auto; }
+
+h1 { font-size: 1.6rem; margin: 0 0 .2rem; letter-spacing: -.02em; }
+h2 { font-size: 1.05rem; margin: 0; }
+
+.lede { color: var(--muted); margin: 0 0 1.75rem; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.row { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.field { flex: 1 1 22rem; display: flex; flex-direction: column; gap: .35rem; }
+.field.narrow { flex: 0 1 14rem; }
+
+label { font-weight: 600; font-size: .85rem; }
+.hint { font-weight: 400; color: var(--muted); }
+small { color: var(--muted); font-size: .8rem; }
+
+input, select {
+  font: inherit;
+  padding: .5rem .6rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .5rem; }
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: .55rem 1rem;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+button.danger { border-color: var(--danger); color: var(--danger); }
+
+.tag {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-left: .3rem;
+}
+
+.note { color: var(--muted); font-size: .85rem; margin: 1rem 0 0; }
+
+.progress-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem; }
+
+pre#log {
+  margin: 0;
+  padding: .85rem;
+  max-height: 22rem;
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font: 12.5px/1.6 ui-monospace, "Cascadia Code", Menlo, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+pre#log .warn { color: var(--warn); }
+pre#log .detail { color: var(--muted); }
+
+.summary { display: flex; gap: 1.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.summary div { display: flex; flex-direction: column; }
+.summary b { font-size: 1.35rem; font-weight: 650; }
+.summary span { color: var(--muted); font-size: .8rem; }
+
+table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+td.key { font-family: ui-monospace, Menlo, monospace; font-size: .82rem; white-space: nowrap; }
+td.where { color: var(--muted); font-size: .78rem; white-space: nowrap; }
+
+.blocked { color: var(--warn); font-size: .78rem; }
+.error { color: var(--danger); font-weight: 600; }
+
+/* Wide tables scroll on their own rather than making the page scroll sideways. */
+#results { overflow-x: auto; }

@@ -1,0 +1,43 @@
+<!doctype html>
+<!--
+  Copyright (c) 2025-2026 Aegis AO Soft LLC and Alexander Orlov.
+  34 Middletown Ave, Atlantic Highlands, NJ 07716
+
+  THIS SOFTWARE IS THE CONFIDENTIAL AND PROPRIETARY INFORMATION OF
+  Aegis AO Soft LLC and Alexander Orlov.
+
+  This code may be used, reproduced, modified, or distributed ONLY with the
+  prior written permission of Aegis AO Soft LLC / Alexander Orlov.
+
+  Author: Alexander Orlov
+  Aegis AO Soft LLC
+-->
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Rent a car in minutes" />
+    <title>Aegis Rentals</title>
+    <link rel="stylesheet" href="/assets/site.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Rent a car in minutes</h1>
+      <p>No queues, no paperwork, no deposit on most vehicles.</p>
+      <nav>
+        <a href="/fleet" title="Browse the whole fleet">Our fleet</a>
+        <a href="/help">Help centre</a>
+      </nav>
+    </header>
+
+    <main id="root">
+      <label for="pickup">Pickup location</label>
+      <input id="pickup" name="pickup" type="text" placeholder="City or airport code" />
+      <button type="submit" class="btn">Find a car</button>
+    </main>
+
+    <!-- The script below is module wiring, never copy. -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

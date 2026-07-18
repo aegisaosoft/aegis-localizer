@@ -1,0 +1,105 @@
+PROPRIETARY LICENCE — ALL RIGHTS RESERVED
+
+Copyright (c) 2025-2026 Aegis AO Soft LLC and Alexander Orlov.
+34 Middletown Ave, Atlantic Highlands, NJ 07716, United States.
+
+================================================================================
+SUMMARY (not a substitute for the terms below)
+
+This source code is published for reading. It is NOT open source and NOT free
+software. You may look at it. You may not use it, run it, copy it, modify it or
+redistribute it without prior written permission from the copyright holders.
+
+To request permission, contact Alexander Orlov / Aegis AO Soft LLC.
+================================================================================
+
+
+1. DEFINITIONS
+
+   "Software" means this source code, its documentation, its build scripts, and
+   any part or derivative of them, in source or compiled form.
+
+   "Copyright Holders" means Aegis AO Soft LLC and Alexander Orlov, jointly.
+
+   "You" means the individual or legal entity reading this.
+
+
+2. GRANT
+
+   You are granted a single, non-exclusive, non-transferable, revocable right:
+   to VIEW the Software for the purposes of evaluation, review and study.
+
+   No other right is granted. In particular, and without limitation, you are NOT
+   granted the right to:
+
+   (a) use or execute the Software, in whole or in part, for any purpose,
+       including personal, internal, educational, research or commercial use;
+   (b) reproduce or copy the Software, other than the incidental copying
+       performed by your browser or version-control client in order to view it;
+   (c) modify, adapt, translate or create derivative works of the Software;
+   (d) distribute, publish, sublicense, sell, rent, lease or lend the Software;
+   (e) incorporate the Software, or any portion of it, into another work,
+       product or service, whether or not that work is distributed;
+   (f) use the Software, or any portion of it, as training data or as input for
+       any machine-learning or artificial-intelligence system;
+   (g) remove, obscure or alter any copyright, attribution or licence notice.
+
+
+3. PERMISSION REQUIRED
+
+   Any right not granted in section 2 requires the PRIOR WRITTEN PERMISSION of
+   the Copyright Holders, given specifically and in advance.
+
+   Permission is granted at the sole discretion of the Copyright Holders, may be
+   limited in scope, purpose, territory or time, may be made subject to separate
+   commercial terms, and may be withdrawn.
+
+   Silence, inaction, or the public availability of this repository does NOT
+   constitute permission. Making source code publicly readable is not a waiver
+   of any right, nor an implied licence of any kind.
+
+
+4. CONTRIBUTIONS
+
+   Unsolicited contributions are not invited. If the Copyright Holders
+   nonetheless accept a contribution from you, you assign to them all rights in
+   that contribution, and you confirm that you are entitled to do so.
+
+
+5. TERMINATION
+
+   The right granted in section 2 terminates immediately and automatically if
+   you breach any term of this licence. On termination you must destroy every
+   copy of the Software in your possession or control.
+
+
+6. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+
+7. LIMITATION OF LIABILITY
+
+   IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+   IN THE SOFTWARE.
+
+
+8. THIRD-PARTY COMPONENTS
+
+   The Software references third-party packages, each governed by its own
+   licence. Nothing here alters those licences, and nothing in those licences
+   grants you any right to the Software itself.
+
+
+9. GOVERNING LAW
+
+   This licence is governed by the laws of the State of New Jersey, United
+   States, without regard to its conflict-of-laws rules.
+
+
+For permission, licensing enquiries, or anything else: contact Alexander Orlov,
+Aegis AO Soft LLC, 34 Middletown Ave, Atlantic Highlands, NJ 07716.

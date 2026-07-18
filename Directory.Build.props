@@ -1,0 +1,30 @@
+<!--
+  Copyright (c) 2025-2026 Aegis AO Soft LLC and Alexander Orlov.
+  34 Middletown Ave, Atlantic Highlands, NJ 07716
+
+  THIS SOFTWARE IS THE CONFIDENTIAL AND PROPRIETARY INFORMATION OF
+  Aegis AO Soft LLC and Alexander Orlov.
+
+  This code may be used, reproduced, modified, or distributed ONLY with the
+  prior written permission of Aegis AO Soft LLC / Alexander Orlov.
+
+  Author: Alexander Orlov
+  Aegis AO Soft LLC
+-->
+
+<Project>
+
+  <PropertyGroup>
+    <!--
+      Parallel builds into private output folders (obj-web/, bin-android/, ...) are how several
+      people or agents work in this repo at once. Without this exclusion MSBuild globs the
+      generated AssemblyInfo out of every one of them and every build fails with CS0579.
+
+      obj/ and bin/ are listed explicitly as well: the SDK only excludes them implicitly while
+      BaseIntermediateOutputPath is at its default, so redirecting it un-excludes the default
+      folders and reintroduces exactly the duplicate-attribute failure this is here to prevent.
+    -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj/**;bin/**;obj-*/**;bin-*/**;artifacts/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+</Project>

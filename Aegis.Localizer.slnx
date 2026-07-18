@@ -1,0 +1,24 @@
+<!--
+  Copyright (c) 2025-2026 Aegis AO Soft LLC and Alexander Orlov.
+  34 Middletown Ave, Atlantic Highlands, NJ 07716
+
+  THIS SOFTWARE IS THE CONFIDENTIAL AND PROPRIETARY INFORMATION OF
+  Aegis AO Soft LLC and Alexander Orlov.
+
+  This code may be used, reproduced, modified, or distributed ONLY with the
+  prior written permission of Aegis AO Soft LLC / Alexander Orlov.
+
+  Author: Alexander Orlov
+  Aegis AO Soft LLC
+-->
+
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Aegis.Localizer.Cli/Aegis.Localizer.Cli.csproj" />
+    <Project Path="src/Aegis.Localizer.Core/Aegis.Localizer.Core.csproj" />
+    <Project Path="src/Aegis.Localizer.Web/Aegis.Localizer.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Aegis.Localizer.Tests/Aegis.Localizer.Tests.csproj" />
+  </Folder>
+</Solution>
