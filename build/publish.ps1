@@ -40,6 +40,7 @@ $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
 $cli = Join-Path $root 'src/Aegis.Localizer.Cli/Aegis.Localizer.Cli.csproj'
+$web = Join-Path $root 'src/Aegis.Localizer.Web/Aegis.Localizer.Web.csproj'
 $artifacts = Join-Path $root 'artifacts'
 
 $versionArg = if ($Version) { @("-p:Version=$Version") } else { @() }
@@ -70,6 +71,17 @@ foreach ($rid in $Runtimes) {
         -o $out -v q --nologo @versionArg
 
     if ($LASTEXITCODE -ne 0) { throw "publish failed for $rid" }
+
+    # The graphical interface is the same web app, shipped in a ui/ folder next to the CLI, which
+    # is where UiCommand looks for it. Without this, `aegis-localizer ui` fails on every install.
+    & dotnet publish $web `
+        -c Release `
+        -r $rid `
+        --self-contained false `
+        -p:DebugType=none `
+        -o (Join-Path $out 'ui') -v q --nologo @versionArg
+
+    if ($LASTEXITCODE -ne 0) { throw "publish of the UI failed for $rid" }
 
     # appsettings.json ships empty; a key committed into an artifact would be a leak.
     Remove-Item (Join-Path $out 'appsettings.local.json') -ErrorAction SilentlyContinue

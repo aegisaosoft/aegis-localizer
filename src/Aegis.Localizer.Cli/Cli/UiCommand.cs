@@ -77,18 +77,43 @@ public static class UiCommand
     private static (string Command, string[] Arguments, string Path)? LocateHost()
     {
         var baseDir = AppContext.BaseDirectory;
-        var executable = OperatingSystem.IsWindows() ? "Aegis.Localizer.Web.exe" : "Aegis.Localizer.Web";
 
-        foreach (var folder in new[] { baseDir, Path.Combine(baseDir, "ui") })
+        foreach (var folder in ProbeFolders(baseDir))
         {
-            var exe = Path.Combine(folder, executable);
-            if (File.Exists(exe)) return (exe, [], exe);
+            var executable = Path.Combine(folder, OperatingSystem.IsWindows()
+                ? "Aegis.Localizer.Web.exe"
+                : "Aegis.Localizer.Web");
+
+            if (File.Exists(executable)) return (executable, [], executable);
 
             var dll = Path.Combine(folder, "Aegis.Localizer.Web.dll");
             if (File.Exists(dll)) return ("dotnet", [dll], dll);
         }
 
         return null;
+    }
+
+    private static IEnumerable<string> ProbeFolders(string baseDir)
+    {
+        // Where the published package puts it.
+        yield return baseDir;
+        yield return Path.Combine(baseDir, "ui");
+
+        // Development convenience: running the CLI straight out of its own build output, where the
+        // web host sits in a sibling project rather than next door. Without this, `ui` only works
+        // from a published build, which is a poor way to find out your change broke it.
+        var directory = new DirectoryInfo(baseDir);
+
+        for (var depth = 0; depth < 6 && directory is not null; depth++, directory = directory.Parent)
+        {
+            var sibling = Path.Combine(directory.FullName, "Aegis.Localizer.Web", "bin");
+            if (!Directory.Exists(sibling)) continue;
+
+            foreach (var candidate in Directory
+                         .EnumerateFiles(sibling, "Aegis.Localizer.Web.dll", SearchOption.AllDirectories)
+                         .OrderByDescending(File.GetLastWriteTimeUtc))
+                yield return Path.GetDirectoryName(candidate)!;
+        }
     }
 
     private static int? PortFrom(string[] args)

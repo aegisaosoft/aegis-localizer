@@ -26,4 +26,13 @@
     <ProjectReference Include="..\Aegis.Localizer.Core\Aegis.Localizer.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      The Web SDK only carries wwwroot into a *publish*, not into the plain build output. The CLI's
+      `ui` command starts this host with its output folder as the content root, so without this the
+      interface comes up serving nothing at all - a blank page rather than an honest error.
+    -->
+    <Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

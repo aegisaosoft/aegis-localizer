@@ -19,6 +19,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLI="$ROOT/src/Aegis.Localizer.Cli/Aegis.Localizer.Cli.csproj"
+WEB="$ROOT/src/Aegis.Localizer.Web/Aegis.Localizer.Web.csproj"
 ARTIFACTS="$ROOT/artifacts"
 RUNTIMES=("${@:-}")
 
@@ -48,6 +49,10 @@ for rid in "${RUNTIMES[@]}"; do
     -p:EnableCompressionInSingleFile=true \
     -p:DebugType=none \
     -o "$out" -v q --nologo
+
+  # The graphical interface is the same web app, shipped in a ui/ folder next to the CLI, which is
+  # where UiCommand looks for it. Without this, `aegis-localizer ui` fails on every install.
+  dotnet publish "$WEB"     -c Release     -r "$rid"     --self-contained false     -p:DebugType=none     -o "$out/ui" -v q --nologo
 
   # appsettings.json ships empty; a key committed into an artifact would be a leak.
   rm -f "$out/appsettings.local.json"

@@ -19,7 +19,15 @@ using Aegis.Localizer.Platforms;
 using Aegis.Localizer.Resources;
 using Aegis.Localizer.Web.Runs;
 
-var builder = WebApplication.CreateBuilder(args);
+// Content root is pinned to the application's own folder rather than the current directory. The CLI
+// starts this host as a child process and a hosted deployment may be launched from anywhere; with
+// the default, wwwroot is looked for beside whatever directory the caller happened to be in, and the
+// interface comes up as a blank page instead of an error.
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory
+});
 
 // Local mode is the desktop experience: the UI may point at a folder on this machine. Hosted mode
 // never allows that - it only ever works on an uploaded archive inside a sandbox.
