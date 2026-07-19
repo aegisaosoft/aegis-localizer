@@ -68,8 +68,18 @@ public sealed class LocalizationRunner(IStructuredModel? model, IRunLog? log = n
         // already there - and that must not need the model or the source literals.
         var existing = store.Read(new ResourceLocation(resourceDir, request.ResourceName, null, request.SourceLanguage));
 
+        // Inspected here, before any early exit, so even a free --scan-only tells the user their
+        // project has no localization support. Finding that out after paying for a translation run
+        // would be a poor way to learn it.
+        result.Setup = adapter.InspectSetup(request, resourceDir);
+        ReportSetup(result.Setup, request);
+
         if (request.ScanOnly || (scan.Candidates.Count == 0 && existing.Count == 0))
         {
+            // --setup is honoured even here: "get my project ready for localization" is a reasonable
+            // thing to want on its own, and it should not require paying for a translation run.
+            ApplySetupIfAsked(adapter, request, resourceDir, result);
+
             Finish(result, request, stopwatch);
             return result;
         }
@@ -237,18 +247,75 @@ public sealed class LocalizationRunner(IStructuredModel? model, IRunLog? log = n
         var allKeys = store.Read(new ResourceLocation(resourceDir, request.ResourceName, null, request.SourceLanguage)).Keys.ToList();
         adapter.EmitRuntime(allKeys, request, resourceDir, _log);
 
-        // 6. Rewrite, only when asked.
+        // 6. Close the gaps we can, now that the bundles the config will point at actually exist.
+        ApplySetupIfAsked(adapter, request, resourceDir, result);
+        var setup = result.Setup;
+
+        // 7. Rewrite, only when asked, and never into a project that will not build afterwards.
         if (request.Apply)
         {
-            _log.Info("Rewriting sources...");
-            result.Rewrite = SourceRewriter.Apply(localized, adapter, request, _log);
-            _log.Info($"  {result.Rewrite.Replacements} replacements in {result.Rewrite.FilesChanged} files " +
-                      $"({result.Rewrite.NotRewritable} left in place).");
+            if (setup.HasBlocking)
+            {
+                _log.Warn("Sources were NOT rewritten: the project is missing localization support " +
+                          "listed above, and the rewritten code would not build. " +
+                          (setup.BlockingIsAutomatic
+                              ? "Re-run with --setup to add it."
+                              : "Add it by hand, then run again."));
+
+                result.RewriteBlocked = true;
+            }
+            else
+            {
+                _log.Info("Rewriting sources...");
+                result.Rewrite = SourceRewriter.Apply(localized, adapter, request, _log);
+                _log.Info($"  {result.Rewrite.Replacements} replacements in {result.Rewrite.FilesChanged} files " +
+                          $"({result.Rewrite.NotRewritable} left in place).");
+            }
         }
 
         Finish(result, request, stopwatch);
         result.ReportPath = ReportWriter.Write(result, request);
         return result;
+    }
+
+    private void ApplySetupIfAsked(
+        ISourceAdapter adapter, LocalizationRequest request, string resourceDir, LocalizationResult result)
+    {
+        if (!request.Setup || result.Setup.IsReady || result.SetupApplied.Count > 0) return;
+
+        _log.Info("Setting up localization...");
+
+        foreach (var done in adapter.ApplySetup(request, resourceDir, _log))
+            result.SetupApplied.Add(done);
+
+        result.Setup = adapter.InspectSetup(request, resourceDir);
+        ReportSetup(result.Setup, request);
+    }
+
+    private void ReportSetup(LocalizationSetup setup, LocalizationRequest request)
+    {
+        if (setup.IsReady) return;
+
+        _log.Info(string.Empty);
+        _log.Info("This project is missing localization support:");
+
+        foreach (var step in setup.Missing)
+        {
+            var mark = step.Severity == SetupSeverity.Blocking ? "!" : "-";
+            _log.Info($"  {mark} {step.Title}");
+
+            // Details are multi-line on purpose - they carry the snippet to paste - so every line
+            // is indented, not just the first.
+            foreach (var line in step.Detail.Replace("\r\n", "\n").Split('\n'))
+                _log.Info("      " + line);
+
+            _log.Info(string.Empty);
+        }
+
+        if (!request.Setup && setup.Missing.Any(s => s.Automatic))
+            _log.Info("  Run again with --setup to add the parts that can be added automatically.");
+
+        _log.Info(string.Empty);
     }
 
     /// <summary>Why this key has to go to the model for this language, or null when it does not.</summary>
@@ -291,7 +358,9 @@ public sealed class LocalizationRunner(IStructuredModel? model, IRunLog? log = n
     /// </summary>
     private static void Finish(LocalizationResult result, LocalizationRequest request, Stopwatch stopwatch)
     {
-        if (request.Apply && !request.ScanOnly)
+        // An all-zero summary means "the stage ran and found nothing to change". A refused rewrite
+        // is a different thing entirely and must stay distinguishable: null plus RewriteBlocked.
+        if (request.Apply && !request.ScanOnly && !result.RewriteBlocked)
             result.Rewrite ??= new RewriteSummary(0, 0, 0, [], Path.Combine(request.WorkDir, "backup"));
 
         result.Elapsed = stopwatch.Elapsed;

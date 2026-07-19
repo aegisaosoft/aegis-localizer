@@ -78,4 +78,26 @@ public interface ISourceAdapter
     /// </summary>
     void EmitRuntime(
         IReadOnlyList<string> keys, LocalizationRequest request, string resourceDir, IRunLog log);
+
+    /// <summary>
+    /// What this project is still missing before localized strings do anything: an i18n dependency,
+    /// a generated-localizations config, code that picks a culture.
+    ///
+    /// Most projects have never been localized. Translating their strings and rewriting their code
+    /// without this check leaves them not compiling, or compiling and stubbornly monolingual — so
+    /// every adapter is expected to answer honestly here, and returning
+    /// <see cref="LocalizationSetup.Complete"/> means "verified, nothing needed", not "did not look".
+    /// </summary>
+    LocalizationSetup InspectSetup(LocalizationRequest request, string resourceDir) =>
+        LocalizationSetup.Complete;
+
+    /// <summary>
+    /// Closes the gaps that <see cref="InspectSetup"/> marked automatic.
+    ///
+    /// Implementations may create files they own and make additive edits to manifests, and must not
+    /// restructure the user's own code — a step that would need that belongs in the report as a
+    /// manual instruction instead.
+    /// </summary>
+    /// <returns>The steps actually carried out.</returns>
+    IReadOnlyList<SetupStep> ApplySetup(LocalizationRequest request, string resourceDir, IRunLog log) => [];
 }

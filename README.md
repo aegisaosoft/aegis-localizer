@@ -262,6 +262,7 @@ translated.
 | `--lang <a,b,c>` | Target cultures: `ru`, or `ru,es,pt-BR`. |
 | `--scan-only` | List what the scanner found and exit. No API call, no cost. |
 | `--apply` | Rewrite the sources. Without it every run is a dry run. |
+| `--setup` | Add the localization support the project is missing, before rewriting. |
 | `--context "<text>"` | What the product is, for better wording. |
 | `--keep <a,b>` | Terms never to translate. |
 | `--retranslate` | Redo translations that already exist, not just the missing ones. |
@@ -302,6 +303,46 @@ Drop `aegis-localizer.json` in your project root so a team (and CI) does not ret
 
 `--json` prints a machine-readable summary. Combined with `--scan-only` it makes a useful gate: fail
 the build when someone adds a hardcoded string.
+
+## If the app was never built for localization
+
+Most apps have not been. They have no i18n dependency, no generated-localizations config, and
+nothing that ever picks a culture. Translating such an app's strings and rewriting its code would
+leave it **worse than it started** — not compiling, or compiling and stubbornly English.
+
+So every run inspects the project first and says exactly what is missing, including `--scan-only`,
+which costs nothing:
+
+```bash
+aegis-localizer --path ./my-app --lang ru --scan-only
+```
+
+```
+This project is missing localization support:
+  ! Add flutter_localizations to pubspec.yaml
+      dependencies:
+        flutter_localizations:
+          sdk: flutter
+      Without it the generated AppLocalizations class has nothing to build on.
+  ! Register the localization delegates on your app widget
+      ...
+  Run again with --setup to add the parts that can be added automatically.
+```
+
+`--setup` adds what it can. It works on its own, without translating anything:
+
+```bash
+aegis-localizer --path ./my-app --lang ru --scan-only --setup
+```
+
+It creates files the tool owns (`l10n.yaml`, the i18n bootstrap module) and makes **additive** edits
+to manifests (`pubspec.yaml`, `package.json`, the `.csproj`) — nothing is reordered or reformatted.
+It will **never** restructure your own code: a step like registering Flutter's localization delegates
+inside your widget tree is reported with the exact snippet, for you to place.
+
+**`--apply` refuses to rewrite while anything required is still missing.** The translations are still
+produced and written to the bundles, so no work is lost — you deal with the remaining steps and run
+again. Shipping a project that no longer builds is the one outcome this tool will not risk.
 
 ## Running it again
 

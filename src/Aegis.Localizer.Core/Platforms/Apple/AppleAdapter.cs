@@ -92,6 +92,12 @@ public sealed class AppleAdapter : ISourceAdapter
         };
     }
 
+    public LocalizationSetup InspectSetup(LocalizationRequest request, string resourceDir) =>
+        AppleSetup.Inspect(request, resourceDir);
+
+    // No ApplySetup override: everything AppleSetup reports lives in project.pbxproj or Package.swift,
+    // and the interface default of "did nothing" is the honest answer for both.
+
     public void EmitRuntime(
         IReadOnlyList<string> keys, LocalizationRequest request, string resourceDir, IRunLog log) =>
         // Foundation reads .strings straight out of the app bundle, so there is no accessor to

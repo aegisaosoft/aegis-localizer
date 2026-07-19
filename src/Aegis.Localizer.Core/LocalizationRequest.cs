@@ -62,6 +62,12 @@ public sealed class LocalizationRequest
     public bool UseCache { get; init; } = true;
 
     /// <summary>
+    /// Add the localization support the project is missing - i18n dependencies, generated-
+    /// localization config, a culture bootstrap - before rewriting anything.
+    /// </summary>
+    public bool Setup { get; init; }
+
+    /// <summary>
     /// Redo every translation, including ones already in the bundle. Normally a run only fills what
     /// is missing or stale; this is for after changing the tone, the glossary or the model.
     /// </summary>

@@ -86,6 +86,12 @@ public sealed class FlutterAdapter : ISourceAdapter
         return new RewritePlan($"AppLocalizations.of(context)!.{key}", GeneratedImport);
     }
 
+    public LocalizationSetup InspectSetup(LocalizationRequest request, string resourceDir) =>
+        FlutterSetup.Inspect(request, resourceDir);
+
+    public IReadOnlyList<SetupStep> ApplySetup(LocalizationRequest request, string resourceDir, IRunLog log) =>
+        FlutterSetup.Apply(request, resourceDir, log);
+
     public void EmitRuntime(
         IReadOnlyList<string> keys, LocalizationRequest request, string resourceDir, IRunLog log) =>
         // gen_l10n owns the accessor class, so generating one here would only collide with it.

@@ -13,6 +13,7 @@
  */
 
 using Aegis.Localizer.Model;
+using Aegis.Localizer.Platforms;
 using Aegis.Localizer.Resources;
 
 namespace Aegis.Localizer;
@@ -46,6 +47,17 @@ public sealed class LocalizationResult
     public List<LanguageOutcome> Languages { get; } = [];
 
     public RewriteSummary? Rewrite { get; set; }
+
+    /// <summary>What the project is still missing before localization does anything.</summary>
+    public LocalizationSetup Setup { get; set; } = LocalizationSetup.Complete;
+
+    /// <summary>Setup steps this run carried out.</summary>
+    public List<SetupStep> SetupApplied { get; } = [];
+
+    /// <summary>
+    /// True when --apply was asked for but refused, because the rewritten project would not build.
+    /// </summary>
+    public bool RewriteBlocked { get; set; }
 
     public long InputTokens { get; set; }
 

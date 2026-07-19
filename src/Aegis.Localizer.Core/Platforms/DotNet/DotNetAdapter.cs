@@ -92,6 +92,12 @@ public sealed class DotNetAdapter : ISourceAdapter
         };
     }
 
+    public LocalizationSetup InspectSetup(LocalizationRequest request, string resourceDir) =>
+        DotNetSetup.Inspect(request, resourceDir);
+
+    public IReadOnlyList<SetupStep> ApplySetup(LocalizationRequest request, string resourceDir, IRunLog log) =>
+        DotNetSetup.Apply(request, resourceDir, log);
+
     public void EmitRuntime(
         IReadOnlyList<string> keys, LocalizationRequest request, string resourceDir, IRunLog log)
     {

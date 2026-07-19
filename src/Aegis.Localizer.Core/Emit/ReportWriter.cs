@@ -17,6 +17,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using Aegis.Localizer.Model;
+using Aegis.Localizer.Platforms;
 
 namespace Aegis.Localizer.Emit;
 
@@ -55,6 +56,20 @@ public static class ReportWriter
             generatedUtc = DateTime.UtcNow,
             elapsedSeconds = Math.Round(result.Elapsed.TotalSeconds, 1),
             tokens = new { input = result.InputTokens, output = result.OutputTokens },
+            rewriteBlocked = result.RewriteBlocked,
+            setup = new
+            {
+                ready = result.Setup.IsReady,
+                applied = result.SetupApplied.Select(s => new { s.Title, s.File }),
+                missing = result.Setup.Missing.Select(s => new
+                {
+                    s.Title,
+                    s.Detail,
+                    severity = s.Severity.ToString(),
+                    s.Automatic,
+                    s.File
+                })
+            },
             bundles = result.Written.ToDictionary(kv => kv.Key, kv => kv.Value.Path),
             localized = result.Localized.Select(e => new
             {
@@ -98,6 +113,49 @@ public static class ReportWriter
         sb.AppendLine($"- Localized: **{result.Localized.Count}** occurrences · rejected as non-UI: {result.Rejected.Count}");
         sb.AppendLine($"- Tokens: {result.InputTokens:N0} in / {result.OutputTokens:N0} out");
         sb.AppendLine();
+
+        if (!result.Setup.IsReady || result.SetupApplied.Count > 0)
+        {
+            sb.AppendLine("## Localization support");
+            sb.AppendLine();
+
+            if (result.SetupApplied.Count > 0)
+            {
+                sb.AppendLine("Added by this run:");
+                sb.AppendLine();
+                foreach (var step in result.SetupApplied)
+                    sb.AppendLine($"- {step.Title}{(step.File is null ? "" : $" (`{step.File}`)")}");
+                sb.AppendLine();
+            }
+
+            if (!result.Setup.IsReady)
+            {
+                sb.AppendLine("Still missing:");
+                sb.AppendLine();
+
+                foreach (var step in result.Setup.Missing)
+                {
+                    var severity = step.Severity == SetupSeverity.Blocking
+                        ? "**required**"
+                        : "recommended";
+
+                    sb.AppendLine($"### {step.Title} ({severity})");
+                    sb.AppendLine();
+                    sb.AppendLine("```");
+                    sb.AppendLine(step.Detail);
+                    sb.AppendLine("```");
+                    sb.AppendLine();
+                }
+            }
+
+            if (result.RewriteBlocked)
+            {
+                sb.AppendLine("> **The sources were not rewritten.** Without the required support above, " +
+                              "the rewritten project would not build. The translations were still written " +
+                              "to the bundles, so nothing is lost — deal with the above and run again.");
+                sb.AppendLine();
+            }
+        }
 
         if (result.Languages.Count > 0)
         {

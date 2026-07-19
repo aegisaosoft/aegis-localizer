@@ -130,6 +130,12 @@ public sealed class WebAdapter : ISourceAdapter
             _ => null
         };
 
+    public LocalizationSetup InspectSetup(LocalizationRequest request, string resourceDir) =>
+        WebSetup.Inspect(request, resourceDir);
+
+    public IReadOnlyList<SetupStep> ApplySetup(LocalizationRequest request, string resourceDir, IRunLog log) =>
+        WebSetup.Apply(request, resourceDir, log);
+
     public void EmitRuntime(
         IReadOnlyList<string> keys, LocalizationRequest request, string resourceDir, IRunLog log)
     {

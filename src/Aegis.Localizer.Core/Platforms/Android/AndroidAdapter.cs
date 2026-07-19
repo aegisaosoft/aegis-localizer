@@ -162,6 +162,12 @@ public sealed partial class AndroidAdapter : ISourceAdapter
         return null;
     }
 
+    public LocalizationSetup InspectSetup(LocalizationRequest request, string resourceDir) =>
+        AndroidSetup.Inspect(request, resourceDir);
+
+    public IReadOnlyList<SetupStep> ApplySetup(LocalizationRequest request, string resourceDir, IRunLog log) =>
+        AndroidSetup.Apply(request, resourceDir, log);
+
     /// <summary>
     /// Nothing to generate: aapt2 produces the R class from the resource files themselves, and both
     /// getString() and stringResource() are platform APIs.

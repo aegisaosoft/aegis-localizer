@@ -26,6 +26,10 @@ class BookingApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Aegis Bookings',
+      // Installed by hand: this is the one piece of localization wiring that lives inside the
+      // app's own widget tree, so aegis-localizer reports it rather than editing it.
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       initialRoute: '/booking',
       routes: {'/booking': (context) => const BookingPage()},
       home: const BookingPage(),

@@ -87,6 +87,7 @@ public static class CliParser
         var scanOnly = false;
         var noCache = false;
         var retranslate = false;
+        var setup = false;
         var verbose = false;
         var json = false;
         var batchSize = 0;
@@ -118,6 +119,7 @@ public static class CliParser
                 case "--scan-only": scanOnly = true; break;
                 case "--no-cache": noCache = true; break;
                 case "--retranslate": retranslate = true; break;
+                case "--setup": setup = true; break;
                 case "--verbose": verbose = true; break;
                 case "--json": json = true; break;
                 case "--batch-size": batchSize = Int(Next(args, ref i), a); break;
@@ -157,6 +159,7 @@ public static class CliParser
             ScanOnly = scanOnly,
             UseCache = !noCache,
             Retranslate = retranslate,
+            Setup = setup,
             BatchSize = Positive(batchSize, config?.BatchSize, 25, "--batch-size", 100),
             Concurrency = Positive(concurrency, config?.Concurrency, 4, "--concurrency", 16),
             MaxFiles = maxFiles
@@ -250,6 +253,8 @@ public static class CliParser
         Common:
           --scan-only             List what the scanner found and exit. No API call, no cost.
           --apply                 Rewrite the sources. Without it every run is a dry run.
+          --setup                 Add the localization support the project is missing (i18n
+                                  dependencies, generated-localization config) before rewriting.
           --context "<text>"      Tell the model what the product is, for better wording.
           --keep <a,b>            Terms never to translate (brand names, product names).
           --config <file>         Defaults to aegis-localizer.json in the project root.
