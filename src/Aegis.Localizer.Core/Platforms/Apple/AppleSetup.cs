@@ -77,7 +77,10 @@ internal static class AppleSetup
                         "no table and returns the key, so the UI shows key names rather than copy. " +
                         "This is left to you on purpose: project.pbxproj is Xcode's own file and " +
                         "editing it from outside is how a project stops opening.",
-                        SetupSeverity.Recommended,
+                        // Blocking despite compiling: rewriting would replace working English copy
+                        // with raw key names on screen, which is a worse app than the one we started
+                        // with. That is the bar, not whether the compiler objects.
+                        SetupSeverity.Blocking,
                         Automatic: false,
                         File: Rel(request.ProjectPath, pbxproj)));
             }

@@ -18,15 +18,17 @@ namespace Aegis.Localizer.Platforms;
 public enum SetupSeverity
 {
     /// <summary>
-    /// Rewritten code will not compile or will throw without it. The rewrite is refused until this
-    /// is dealt with, because shipping a project that no longer builds is the worst thing this tool
-    /// could do to someone.
+    /// The rewrite would leave the app broken for the people who use it. The obvious case is code
+    /// that no longer compiles, but it also covers an app that builds and then shows resource keys
+    /// where copy used to be - the test is "would the user ship something worse than they had", not
+    /// merely "does the compiler complain". The rewrite is refused until this is dealt with.
     /// </summary>
     Blocking,
 
     /// <summary>
-    /// The project builds and runs, but nothing the user can see changes - typically because no
-    /// code ever selects a culture. Worth shouting about; not worth refusing over.
+    /// The app keeps working exactly as it did, it just does not gain anything yet - typically
+    /// because no code ever selects a culture, so everyone still sees the source language. Worth
+    /// shouting about; not worth refusing over.
     /// </summary>
     Recommended
 }
