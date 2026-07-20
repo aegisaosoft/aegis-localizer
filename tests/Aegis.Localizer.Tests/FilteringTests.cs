@@ -41,7 +41,22 @@ public class NoiseFilterTests
     [InlineData("Booking for {0} confirmed")]
     [InlineData("Settings")]
     [InlineData("Waiting for approval")]
+    // Copy that starts with a SQL verb. Extremely common on buttons, and a filter that drops it
+    // does so before the model ever sees it, so nothing in the report explains the absence.
+    [InlineData("Delete your account")]
+    [InlineData("Update payment method")]
+    [InlineData("Create a booking")]
+    [InlineData("Insert a photo")]
+    [InlineData("Drop files here")]
+    [InlineData("Select a date")]
     public void KeepsUserCopy(string value) => Assert.False(NoiseFilter.IsNoise(value));
+
+    [Theory]
+    [InlineData("SELECT Id, Name FROM dbo.Cars WHERE Deleted = 0")]
+    [InlineData("insert into Bookings (Id) values (1)")]
+    [InlineData("UPDATE Users SET Name = 'x'")]
+    [InlineData("CREATE TABLE Cars (Id int)")]
+    public void StillDropsActualSql(string value) => Assert.True(NoiseFilter.IsNoise(value));
 }
 
 public class KeyNamerTests

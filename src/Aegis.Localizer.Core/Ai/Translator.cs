@@ -44,7 +44,11 @@ public sealed partial class Translator(
     /// again next run.
     /// </summary>
     public async Task<IReadOnlyDictionary<string, string>> TranslateAsync(
-        IReadOnlyList<TranslationUnit> units, string language, RunCache cache, CancellationToken ct)
+        IReadOnlyList<TranslationUnit> units,
+        string language,
+        RunCache cache,
+        IReadOnlyList<(string Source, string Translation)> approved,
+        CancellationToken ct)
     {
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
         if (units.Count == 0) return result;
@@ -70,7 +74,7 @@ public sealed partial class Translator(
 
             var produced = await Batching.RunAsync(
                 batches,
-                (batch, token) => TranslateBatchAsync(batch, language, token),
+                (batch, token) => TranslateBatchAsync(batch, language, approved, token),
                 request.Concurrency,
                 $"translate:{language}",
                 log,
@@ -104,7 +108,10 @@ public sealed partial class Translator(
     }
 
     private async Task<List<TranslatedString>> TranslateBatchAsync(
-        List<(int Index, TranslationUnit Unit)> batch, string language, CancellationToken ct)
+        List<(int Index, TranslationUnit Unit)> batch,
+        string language,
+        IReadOnlyList<(string Source, string Translation)> approved,
+        CancellationToken ct)
     {
         var items = batch.Select(b => new ItemDto(
             b.Index,
@@ -113,7 +120,7 @@ public sealed partial class Translator(
             b.Unit.Context)).ToList();
 
         var result = await claude.ExtractAsync<ToolResult>(
-            SystemPrompt(language),
+            SystemPrompt(language, approved),
             "Translate these strings. Return exactly one entry per id.\n\n" +
             JsonSerializer.Serialize(items, PayloadOptions),
             "report_translations",
@@ -128,7 +135,7 @@ public sealed partial class Translator(
         return result.Items.Where(item => expected.Contains(item.Id)).ToList();
     }
 
-    private string SystemPrompt(string language)
+    private string SystemPrompt(string language, IReadOnlyList<(string Source, string Translation)> approved)
     {
         var target = Describe(language);
         var source = Describe(request.SourceLanguage);
@@ -142,6 +149,15 @@ public sealed partial class Translator(
             ? string.Empty
             : $"\n\nAbout this product: {request.ProjectContext}";
 
+        // The project's own corrections, worth more than any instruction this prompt could carry:
+        // they are the team's actual decisions about terminology and register, in their own words.
+        var house = approved.Count == 0
+            ? string.Empty
+            : "\n\nThis project has already settled on the following wordings. Follow their " +
+              "terminology, register and formality; where a new string resembles one of these, " +
+              "translate it the same way:\n" +
+              string.Join("\n", approved.Select(a => $"  {a.Source}  ->  {a.Translation}"));
+
         // Triple-brace interpolation: the prompt itself must show {0}, {name} and {{count}} verbatim.
         return $$$"""
                 You are a professional software localizer translating the user interface of a
@@ -150,7 +166,7 @@ public sealed partial class Translator(
                 These strings appear in a shipping product, so translate them the way a native
                 speaker would expect to read them in an app of this kind, not word for word. Match
                 the register a UI uses in {{{target}}}: follow the platform's own conventions for
-                formality, imperative verbs on buttons, and sentence or title casing.{{{context}}}{{{glossary}}}
+                formality, imperative verbs on buttons, and sentence or title casing.{{{context}}}{{{glossary}}}{{{house}}}
 
                 Hard requirements:
                 - Preserve every placeholder exactly as written and in the same number: {0}, {1},

@@ -47,6 +47,15 @@ public sealed class LanguageOutcome
     /// <summary>Already translated and left alone.</summary>
     public int AlreadyTranslated { get; set; }
 
+    /// <summary>
+    /// Translations a person corrected by hand. Never overwritten, and used to teach the model how
+    /// this project wants to be written.
+    /// </summary>
+    public int HumanEdited { get; set; }
+
+    /// <summary>Filled from a wording a person had already settled on elsewhere, at no cost.</summary>
+    public int ReusedApproved { get; set; }
+
     /// <summary>Total keys the bundle should hold after this run.</summary>
     public int Total { get; set; }
 

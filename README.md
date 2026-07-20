@@ -77,7 +77,7 @@ Run the test suite:
 dotnet test
 ```
 
-160 tests, all offline. They drive the entire pipeline — scan, classify, translate, write, rewrite —
+175 tests, all offline. They drive the entire pipeline — scan, classify, translate, write, rewrite —
 against a fake model, so **no API key is needed and no request is ever sent**. A green run takes
 about a second. If anything here fails, stop and fix it before running the tool against real code.
 
@@ -395,6 +395,29 @@ one of these formats spells "not translated yet": your app falls back to the sou
 next run sees a gap and retries. A bundle full of English that claims to be German would look
 finished for ever.
 
+### It learns from your corrections
+
+The most valuable thing a localized project produces is its people correcting the machine. Those
+corrections are treated as the last word:
+
+- **A translation you edit by hand is never overwritten** — not by a normal run, and not by
+  `--retranslate`. Losing a translator's work to a flag would teach everyone never to touch the
+  bundles, which is the opposite of what you want.
+- **The same copy elsewhere inherits your wording.** If you fix one string and the same English
+  turns up under another key, your version is reused rather than paid for again and reinvented
+  slightly differently.
+- **New copy is translated in the light of what you have already decided.** Your corrections are
+  shown to the model as this project's house style, so terminology, register and formality carry
+  over to strings you have not seen yet.
+
+A worked example. The tool first wrote «Удалить учётную запись»; a translator changed it to «Удали
+свой аккаунт» — informal, and without the officialese. When `"Update your profile"` was added later,
+it came back as «Обнови свой профиль», in the register the translator had chosen, rather than the
+formal «Обновите» a fresh translation would have produced.
+
+This is why `state.json` is bookkeeping rather than a cache, and why `--no-cache` does not disable
+it: it records what the **tool** wrote, so anything that no longer matches is known to be yours.
+
 ### What the tool leaves behind
 
 ```
@@ -404,7 +427,7 @@ your-project/
     report.<langs>.md            human-readable review of the run
     report.<langs>.json          the same, machine-readable
     cache.json                   verdicts and translations, to avoid paying twice
-    state.json                   which English each translation was made from
+    state.json                   what the tool wrote, and the wordings you corrected
     backup/                      originals of every file --apply touched
 ```
 

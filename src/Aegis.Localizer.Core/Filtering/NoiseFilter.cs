@@ -86,7 +86,16 @@ public static partial class NoiseFilter
     [GeneratedRegex(@"^\{?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\}?$")] private static partial Regex Guid();
     [GeneratedRegex(@"^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")] private static partial Regex HexColor();
     [GeneratedRegex(@"^[a-z]+/[a-z0-9.+-]+$", RegexOptions.IgnoreCase)] private static partial Regex MimeType();
-    [GeneratedRegex(@"^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|MERGE|EXEC|WITH)\s", RegexOptions.IgnoreCase)] private static partial Regex Sql();
+    /// <summary>
+    /// A leading SQL verb is not enough: "Delete your account", "Update payment method" and
+    /// "Create a booking" are ordinary button labels, and dropping them silently is the worst kind
+    /// of miss - the string never reaches the model, so nothing in the report explains its absence.
+    /// A second clause is required before something counts as a statement.
+    /// </summary>
+    [GeneratedRegex(
+        @"^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|MERGE|EXEC|WITH)\b.*\b(FROM|INTO|SET|VALUES|TABLE|WHERE|JOIN|PROCEDURE|VIEW|INDEX|DATABASE)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    private static partial Regex Sql();
     [GeneratedRegex(@"^[yMdHhmsfFtTzZ:/.,\s\\'-]+$")] private static partial Regex DateFormat();
     [GeneratedRegex(@"^[A-Z0-9]+(_[A-Z0-9]+)+$")] private static partial Regex ScreamingSnake();
     [GeneratedRegex(@"^[A-Za-z0-9]+([._/\\:-][A-Za-z0-9]+)+$")] private static partial Regex IdentifierLike();

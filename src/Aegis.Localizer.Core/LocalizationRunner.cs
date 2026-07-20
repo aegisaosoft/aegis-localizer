@@ -191,14 +191,36 @@ public sealed class LocalizationRunner(IStructuredModel? model, IRunLog? log = n
 
             var outcome = new LanguageOutcome { Language = language, Total = corpus.Count };
             var units = new List<TranslationUnit>();
+            var reused = new Dictionary<string, string>(StringComparer.Ordinal);
 
             foreach (var (key, text) in corpus)
             {
+                // A wording somebody corrected by hand outranks anything the model would produce,
+                // including under --retranslate. Losing a translator's work to a flag would teach
+                // people never to touch the bundles, which is the opposite of what we want.
+                if (already.TryGetValue(key, out var current) &&
+                    state.IsHumanEdited(language, key, current))
+                {
+                    state.RecordApproved(language, text, current);
+                    outcome.HumanEdited++;
+                    outcome.AlreadyTranslated++;
+                    continue;
+                }
+
                 var reason = Needed(key, text, language, already, changed, state, request.Retranslate);
 
                 if (reason is null)
                 {
                     outcome.AlreadyTranslated++;
+                    continue;
+                }
+
+                // The same copy a person has already settled on elsewhere: reuse their wording
+                // rather than paying to have it invented again, slightly differently.
+                if (state.ApprovedFor(language, text) is { } approved)
+                {
+                    reused[key] = approved;
+                    outcome.ReusedApproved++;
                     continue;
                 }
 
@@ -208,16 +230,29 @@ public sealed class LocalizationRunner(IStructuredModel? model, IRunLog? log = n
 
             result.Languages.Add(outcome);
 
-            if (units.Count == 0)
+            if (units.Count == 0 && reused.Count == 0)
             {
                 _log.Info($"  {language}: already complete, {outcome.Total} strings.");
+                state.Save();
                 continue;
             }
 
             _log.Info($"  {language}: {Describe(outcome)}");
 
-            var translated = await translator.TranslateAsync(units, language, cache, ct);
+            // The project's own corrections are shown to the model, so new copy comes back in the
+            // wording this project has already settled on rather than a fresh invention each time.
+            var examples = state.ApprovedExamples(language, 20);
+            if (examples.Count > 0)
+                _log.Detail($"  {language}: following {examples.Count} wording(s) corrected in this project");
+
+            var translated = units.Count > 0
+                ? new Dictionary<string, string>(
+                    await translator.TranslateAsync(units, language, cache, examples, ct), StringComparer.Ordinal)
+                : new Dictionary<string, string>(StringComparer.Ordinal);
+
             cache.Save();
+
+            foreach (var (key, value) in reused) translated[key] = value;
 
             // Only what came back is written. A string the model refused stays absent from the
             // bundle rather than being filled with its own English, so the next run retries it
@@ -228,12 +263,13 @@ public sealed class LocalizationRunner(IStructuredModel? model, IRunLog? log = n
                 result.Written[language] = written;
                 _log.Info($"  {written.Path}  +{written.Added} new, {written.Updated} updated");
 
-                foreach (var key in translated.Keys) state.Record(language, key, corpus[key]);
-                state.Save();
+                foreach (var (key, value) in translated) state.RecordWritten(language, key, corpus[key], value);
             }
 
-            if (translated.Count < units.Count)
-                _log.Warn($"{language}: {units.Count - translated.Count} string(s) still untranslated; run again to retry");
+            state.Save();
+
+            if (translated.Count < units.Count + reused.Count)
+                _log.Warn($"{language}: {units.Count + reused.Count - translated.Count} string(s) still untranslated; run again to retry");
 
             foreach (var entry in localized)
                 if (translated.TryGetValue(entry.Key, out var text)) entry.Translations[language] = text;
