@@ -73,10 +73,16 @@ static async Task<int> RunAsync(CliSettings settings)
     ClaudeClient? client = null;
     try
     {
+        // --setup wants the model too: deciding what a project is missing means reading its build
+        // files, which is the whole point of doing it with a model rather than a rule book. It is
+        // not required though - without a key the run falls back to the built-in checks.
         if (!request.ScanOnly)
         {
-            var apiKey = ResolveApiKey(settings);
-            client = new ClaudeClient(new ClaudeOptions { ApiKey = apiKey, Model = request.Model });
+            client = new ClaudeClient(new ClaudeOptions { ApiKey = ResolveApiKey(settings), Model = request.Model });
+        }
+        else if (request.Setup && TryResolveApiKey(settings) is { } key)
+        {
+            client = new ClaudeClient(new ClaudeOptions { ApiKey = key, Model = request.Model });
         }
 
         var result = await new LocalizationRunner(client, log).RunAsync(request);
@@ -152,6 +158,19 @@ static string Summary(LocalizationResult result, LocalizationRequest request) =>
         tokens = new { input = result.InputTokens, output = result.OutputTokens },
         report = result.ReportPath
     }, new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+
+/// <summary>The key if one is configured, otherwise null. Used where a key is welcome but optional.</summary>
+static string? TryResolveApiKey(CliSettings settings)
+{
+    try
+    {
+        return ResolveApiKey(settings);
+    }
+    catch (UsageException)
+    {
+        return null;
+    }
+}
 
 /// <summary>--api-key, then ANTHROPIC_API_KEY, then appsettings next to the executable.</summary>
 static string ResolveApiKey(CliSettings settings)

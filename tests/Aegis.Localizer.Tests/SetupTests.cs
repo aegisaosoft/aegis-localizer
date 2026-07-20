@@ -116,7 +116,21 @@ public class SetupTests
         var root = BareFlutterApp(temp);
         var before = await File.ReadAllTextAsync(Path.Combine(root, "lib", "main.dart"));
 
-        var result = await new LocalizationRunner(new FakeModel()).RunAsync(Request(root, apply: true));
+        var model = new FakeModel
+        {
+            PlanSetup = () =>
+            [
+                new
+                {
+                    title = "Add flutter_localizations",
+                    detail = "AppLocalizations does not exist without it, so the rewrite would not compile.",
+                    severity = "Blocking",
+                    edits = Array.Empty<object>()
+                }
+            ]
+        };
+
+        var result = await new LocalizationRunner(model).RunAsync(Request(root, apply: true));
 
         Assert.True(result.RewriteBlocked);
         Assert.Null(result.Rewrite);
@@ -127,67 +141,192 @@ public class SetupTests
         Assert.NotEmpty(result.Written);
     }
 
+    /// <summary>
+    /// A model that proposes edits gets them applied — after the tool has checked each one. This is
+    /// the half that matters offline: the model decides, but the verification is ours.
+    /// </summary>
     [Fact]
-    public async Task SetupAddsWhatItCanAndSaysWhatIsLeft()
+    public async Task ProposedEditsAreApplied()
     {
         using var temp = new TempFolder();
         var root = BareFlutterApp(temp);
 
-        var result = await new LocalizationRunner(new FakeModel()).RunAsync(Request(root, setup: true));
+        var model = new FakeModel
+        {
+            PlanSetup = () =>
+            [
+                new
+                {
+                    title = "Add flutter_localizations",
+                    detail = "The generated AppLocalizations needs it.",
+                    severity = "Blocking",
+                    edits = new object[]
+                    {
+                        new
+                        {
+                            file = "pubspec.yaml",
+                            kind = "InsertAfter",
+                            anchor = "  flutter:\n    sdk: flutter",
+                            content = "\n  flutter_localizations:\n    sdk: flutter",
+                            reason = "adds the dependency"
+                        }
+                    }
+                }
+            ]
+        };
 
+        var result = await new LocalizationRunner(model).RunAsync(Request(root, setup: true));
         var pubspec = await File.ReadAllTextAsync(Path.Combine(root, "pubspec.yaml"));
 
         Assert.Contains("flutter_localizations:", pubspec);
-        Assert.Contains("sdk: flutter", pubspec);
-        Assert.Contains("intl:", pubspec);
-        Assert.Contains("generate: true", pubspec);
-        Assert.True(File.Exists(Path.Combine(root, "l10n.yaml")));
 
-        // The pubspec it did not write is still the user's: nothing else was disturbed.
+        // Everything the edit did not name is untouched.
         Assert.Contains("http: ^1.0.0", pubspec);
         Assert.Contains("uses-material-design: true", pubspec);
 
-        // Registering the delegates is a change inside their own widget, so it stays manual.
-        var remaining = result.Setup.Missing.Select(s => s.Title).ToList();
-        Assert.Contains(remaining, t => t.Contains("delegates"));
-        Assert.DoesNotContain(remaining, t => t.Contains("flutter_localizations"));
+        Assert.Single(result.SetupApplied);
+        Assert.True(File.Exists(Path.Combine(root, ".aegis-localizer", "backup", "pubspec.yaml")));
     }
 
+    /// <summary>
+    /// An anchor that matches more than once names no particular place. Guessing which one was meant
+    /// is how a build file quietly acquires a change nobody designed.
+    /// </summary>
     [Fact]
-    public async Task SetupIsIdempotent()
+    public async Task AnAmbiguousAnchorIsRefused()
+    {
+        using var temp = new TempFolder();
+        var root = BareFlutterApp(temp);
+        var before = await File.ReadAllTextAsync(Path.Combine(root, "pubspec.yaml"));
+
+        var model = new FakeModel
+        {
+            PlanSetup = () =>
+            [
+                new
+                {
+                    title = "Ambiguous edit",
+                    detail = "sdk: flutter appears twice in the file.",
+                    severity = "Blocking",
+                    edits = new object[]
+                    {
+                        new
+                        {
+                            file = "pubspec.yaml",
+                            kind = "InsertAfter",
+                            anchor = "    sdk: flutter",
+                            content = "\n  intl: any",
+                            reason = "adds intl"
+                        }
+                    }
+                }
+            ]
+        };
+
+        var result = await new LocalizationRunner(model).RunAsync(Request(root, setup: true));
+
+        Assert.Equal(before, await File.ReadAllTextAsync(Path.Combine(root, "pubspec.yaml")));
+        Assert.Empty(result.SetupApplied);
+    }
+
+    /// <summary>
+    /// The model may only touch files the adapter offered, and only inside the project. Entry points
+    /// ARE offered - a web app needs its bootstrap imported there - but an arbitrary source file is
+    /// not, and neither is anything outside the tree.
+    /// </summary>
+    [Theory]
+    [InlineData("../outside.txt")]
+    [InlineData("lib/widgets/booking_card.dart")]
+    public async Task EditsToFilesThatWereNotOfferedAreRefused(string file)
+    {
+        using var temp = new TempFolder();
+        var root = BareFlutterApp(temp);
+        var before = await File.ReadAllTextAsync(Path.Combine(root, "lib", "main.dart"));
+
+        var model = new FakeModel
+        {
+            PlanSetup = () =>
+            [
+                new
+                {
+                    title = "Out of bounds",
+                    detail = "Should be refused.",
+                    severity = "Blocking",
+                    edits = new object[]
+                    {
+                        new { file, kind = "CreateFile", anchor = "", content = "// injected", reason = "no" }
+                    }
+                }
+            ]
+        };
+
+        var result = await new LocalizationRunner(model).RunAsync(Request(root, setup: true));
+
+        Assert.Empty(result.SetupApplied);
+        Assert.Equal(before, await File.ReadAllTextAsync(Path.Combine(root, "lib", "main.dart")));
+        Assert.False(File.Exists(Path.Combine(temp.Path, "outside.txt")));
+        Assert.False(File.Exists(Path.Combine(root, "lib", "widgets", "booking_card.dart")));
+    }
+
+    /// <summary>A step with no edits is guidance, not automation, and must leave the tree alone.</summary>
+    [Fact]
+    public async Task AManualStepChangesNothingButIsStillReported()
     {
         using var temp = new TempFolder();
         var root = BareFlutterApp(temp);
 
-        await new LocalizationRunner(new FakeModel()).RunAsync(Request(root, setup: true));
-        var afterFirst = await File.ReadAllTextAsync(Path.Combine(root, "pubspec.yaml"));
+        var model = new FakeModel
+        {
+            PlanSetup = () =>
+            [
+                new
+                {
+                    title = "Register the localization delegates",
+                    detail = "Add localizationsDelegates to your MaterialApp.",
+                    severity = "Blocking",
+                    edits = Array.Empty<object>()
+                }
+            ]
+        };
 
-        await new LocalizationRunner(new FakeModel()).RunAsync(Request(root, setup: true));
+        var result = await new LocalizationRunner(model).RunAsync(Request(root, apply: true));
 
-        Assert.Equal(afterFirst, await File.ReadAllTextAsync(Path.Combine(root, "pubspec.yaml")));
+        Assert.True(result.RewriteBlocked);
+        Assert.Empty(result.SetupApplied);
+        Assert.Contains(result.Setup.Missing, s => s.Title.Contains("delegates"));
     }
 
-    /// <summary>Once the manual step is done too, the rewrite goes ahead.</summary>
+    /// <summary>When the model reports nothing outstanding, the rewrite goes ahead.</summary>
     [Fact]
-    public async Task RewritingProceedsOnceSupportIsComplete()
+    public async Task RewritingProceedsWhenNothingIsOutstanding()
     {
         using var temp = new TempFolder();
         var root = BareFlutterApp(temp);
-
-        await new LocalizationRunner(new FakeModel()).RunAsync(Request(root, setup: true));
-
-        // Stand in for the developer wiring up the delegates.
-        var mainPath = Path.Combine(root, "lib", "main.dart");
-        var main = await File.ReadAllTextAsync(mainPath);
-        await File.WriteAllTextAsync(mainPath, main.Replace(
-            "return MaterialApp(",
-            "return MaterialApp(\n        localizationsDelegates: AppLocalizations.localizationsDelegates,"));
 
         var result = await new LocalizationRunner(new FakeModel()).RunAsync(Request(root, apply: true));
 
         Assert.False(result.RewriteBlocked);
         Assert.NotNull(result.Rewrite);
         Assert.True(result.Setup.IsReady);
+    }
+
+    /// <summary>Without a model the built-in per-stack fixes still run, so --setup works offline.</summary>
+    [Fact]
+    public async Task SetupFallsBackToTheBuiltInChecksWithoutAModel()
+    {
+        using var temp = new TempFolder();
+        var root = BareFlutterApp(temp);
+
+        var request = new LocalizationRequest
+        {
+            ProjectPath = root, Languages = ["ru"], ScanOnly = true, Setup = true, UseCache = false
+        };
+
+        var result = await new LocalizationRunner(model: null).RunAsync(request);
+
+        Assert.True(File.Exists(Path.Combine(root, "l10n.yaml")));
+        Assert.Contains("flutter_localizations:", await File.ReadAllTextAsync(Path.Combine(root, "pubspec.yaml")));
+        Assert.NotEmpty(result.SetupApplied);
     }
 
     /// <summary>An adapter must not claim a project is ready when it never looked.</summary>

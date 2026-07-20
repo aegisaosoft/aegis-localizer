@@ -13,6 +13,7 @@
  */
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Aegis.Localizer.Claude;
 
 namespace Aegis.Localizer.Tests;
@@ -24,7 +25,15 @@ namespace Aegis.Localizer.Tests;
 /// </summary>
 public sealed class FakeModel : IStructuredModel
 {
-    private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
+    /// <summary>
+    /// Deliberately identical to ClaudeClient's, enum converter included. A fake that deserializes
+    /// more leniently than the real client hides exactly the bugs it exists to catch.
+    /// </summary>
+    private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter(allowIntegerValues: true) }
+    };
 
     /// <summary>Decides the verdict for a source string. Default: anything with a capital letter is copy.</summary>
     public Func<string, bool> IsUserFacing { get; set; } = text => text.Any(char.IsUpper);
@@ -34,6 +43,12 @@ public sealed class FakeModel : IStructuredModel
 
     /// <summary>Ids the model should silently omit, to exercise the missing-answer path.</summary>
     public HashSet<int> DropIds { get; } = [];
+
+    /// <summary>
+    /// What the setup planner should answer. Empty means "the project is ready", which keeps the
+    /// tests that are not about setup free of it.
+    /// </summary>
+    public Func<IEnumerable<object>> PlanSetup { get; set; } = () => [];
 
     public long InputTokens { get; private set; }
 
@@ -52,7 +67,9 @@ public sealed class FakeModel : IStructuredModel
         InputTokens += 100;
         OutputTokens += 50;
 
-        var items = ParseBatch(userText);
+        // Only the batch tools carry a numbered item list; the setup planner is handed the project's
+        // build files instead, and trying to read that as a batch just throws.
+        var items = toolName is "report_verdicts" or "report_translations" ? ParseBatch(userText) : [];
 
         object payload = toolName switch
         {
@@ -78,6 +95,9 @@ public sealed class FakeModel : IStructuredModel
                         translation = Translate(CurrentLanguage(system), i.Text)
                     })
             },
+            // Setup planning: no steps by default, so tests that are not about setup are unaffected.
+            "report_setup" => new { steps = PlanSetup() },
+
             _ => throw new InvalidOperationException($"Unexpected tool '{toolName}'.")
         };
 

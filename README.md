@@ -77,7 +77,7 @@ Run the test suite:
 dotnet test
 ```
 
-146 tests, all offline. They drive the entire pipeline — scan, classify, translate, write, rewrite —
+160 tests, all offline. They drive the entire pipeline — scan, classify, translate, write, rewrite —
 against a fake model, so **no API key is needed and no request is ever sent**. A green run takes
 about a second. If anything here fails, stop and fix it before running the tool against real code.
 
@@ -329,16 +329,33 @@ This project is missing localization support:
   Run again with --setup to add the parts that can be added automatically.
 ```
 
-`--setup` adds what it can. It works on its own, without translating anything:
+**Claude decides what to change, not a rule book.** It reads the project's own build files —
+`pubspec.yaml`, `package.json`, `build.gradle`, the `.csproj`, `Package.swift` — and works out what
+is missing there, rather than matching the handful of shapes a hardcoded rule could anticipate. That
+is how it catches things like a Gradle `resConfigs "en"` quietly stripping the very locale folders
+this tool just wrote.
+
+`--setup` applies what it proposes. It works on its own, without translating anything:
 
 ```bash
 aegis-localizer --path ./my-app --lang ru --scan-only --setup
 ```
 
-It creates files the tool owns (`l10n.yaml`, the i18n bootstrap module) and makes **additive** edits
-to manifests (`pubspec.yaml`, `package.json`, the `.csproj`) — nothing is reordered or reformatted.
+Claude proposes; the tool decides whether the proposal is allowed. Every edit is checked before
+anything is written:
+
+- it may only touch a build file, manifest or entry point the adapter offered, and only inside your
+  project;
+- it must quote an **exact anchor** that occurs **exactly once** in that file — an ambiguous anchor
+  is refused rather than guessed at;
+- the file is backed up byte for byte first, to `.aegis-localizer/backup/`;
+- a step whose edits do not all pass is applied as nothing at all, never half.
+
 It will **never** restructure your own code: a step like registering Flutter's localization delegates
 inside your widget tree is reported with the exact snippet, for you to place.
+
+Without an API key, `--setup` falls back to a small set of built-in per-stack fixes, so it still does
+something useful for free.
 
 **`--apply` refuses to rewrite while anything required is still missing.** The translations are still
 produced and written to the bundles, so no work is lost — you deal with the remaining steps and run

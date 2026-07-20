@@ -41,7 +41,12 @@ public sealed class ClaudeClient : IStructuredModel, IDisposable
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web)
     {
         PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+
+        // A schema that declares an enum gets a string back - "Blocking", not 0 - and without this
+        // the payload is rejected wholesale. The failure looks like a bad answer from the model
+        // rather than a missing converter here, which is a slow way to find it.
+        Converters = { new JsonStringEnumConverter(allowIntegerValues: true) }
     };
 
     private readonly HttpClient _http;
@@ -89,20 +94,41 @@ public sealed class ClaudeClient : IStructuredModel, IDisposable
             }
         };
 
-        using var doc = await SendAsync(body, ct);
+        // A forced tool call is schema-validated at the API, but the payload can still arrive in a
+        // shape this type cannot take - an object where an array belongs, a number as a string. That
+        // is a bad roll rather than a broken request, so it is worth asking again: with one batch in
+        // flight, a single malformed answer would otherwise fail the entire run.
+        ClaudeException? lastParseFailure = null;
 
-        foreach (var block in doc.RootElement.GetProperty("content").EnumerateArray())
+        for (var attempt = 1; attempt <= 3; attempt++)
         {
-            if (block.GetProperty("type").GetString() != "tool_use") continue;
-            if (block.GetProperty("name").GetString() != toolName) continue;
+            using var doc = await SendAsync(body, ct);
 
-            var input = block.GetProperty("input").GetRawText();
-            var result = JsonSerializer.Deserialize<T>(input, JsonOpts);
-            if (result is null) throw new ClaudeException($"Tool '{toolName}' returned an empty payload.");
-            return result;
+            foreach (var block in doc.RootElement.GetProperty("content").EnumerateArray())
+            {
+                if (block.GetProperty("type").GetString() != "tool_use") continue;
+                if (block.GetProperty("name").GetString() != toolName) continue;
+
+                var input = block.GetProperty("input").GetRawText();
+
+                try
+                {
+                    var result = JsonSerializer.Deserialize<T>(input, JsonOpts);
+                    if (result is not null) return result;
+
+                    lastParseFailure = new ClaudeException($"Tool '{toolName}' returned an empty payload.");
+                }
+                catch (JsonException ex)
+                {
+                    lastParseFailure = new ClaudeException(
+                        $"Tool '{toolName}' returned a payload this tool cannot read: {ex.Message}");
+                }
+            }
+
+            if (lastParseFailure is null) break;
         }
 
-        throw new ClaudeException($"Model did not call tool '{toolName}'.");
+        throw lastParseFailure ?? new ClaudeException($"Model did not call tool '{toolName}'.");
     }
 
     private async Task<JsonDocument> SendAsync(object body, CancellationToken ct)

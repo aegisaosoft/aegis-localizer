@@ -78,7 +78,7 @@ public sealed class LocalizationRunner(IStructuredModel? model, IRunLog? log = n
         {
             // --setup is honoured even here: "get my project ready for localization" is a reasonable
             // thing to want on its own, and it should not require paying for a translation run.
-            ApplySetupIfAsked(adapter, request, resourceDir, result);
+            await PrepareSetupAsync(adapter, request, resourceDir, result, ct);
 
             Finish(result, request, stopwatch);
             return result;
@@ -248,7 +248,7 @@ public sealed class LocalizationRunner(IStructuredModel? model, IRunLog? log = n
         adapter.EmitRuntime(allKeys, request, resourceDir, _log);
 
         // 6. Close the gaps we can, now that the bundles the config will point at actually exist.
-        ApplySetupIfAsked(adapter, request, resourceDir, result);
+        await PrepareSetupAsync(adapter, request, resourceDir, result, ct);
         var setup = result.Setup;
 
         // 7. Rewrite, only when asked, and never into a project that will not build afterwards.
@@ -278,17 +278,74 @@ public sealed class LocalizationRunner(IStructuredModel? model, IRunLog? log = n
         return result;
     }
 
-    private void ApplySetupIfAsked(
-        ISourceAdapter adapter, LocalizationRequest request, string resourceDir, LocalizationResult result)
+    /// <summary>
+    /// Works out what the project still needs, and closes the gaps when asked.
+    ///
+    /// When a model is available it reads the project's own build files and decides; the built-in
+    /// per-stack checks are the offline fallback, so a free --scan-only still says something useful
+    /// without an API key. Deciding is the model's half, verifying and writing is ours.
+    /// </summary>
+    private async Task PrepareSetupAsync(
+        ISourceAdapter adapter, LocalizationRequest request, string resourceDir, LocalizationResult result,
+        CancellationToken ct)
     {
-        if (!request.Setup || result.Setup.IsReady || result.SetupApplied.Count > 0) return;
+        if (!(request.Apply || request.Setup)) return;
 
-        _log.Info("Setting up localization...");
+        // No key, no model: fall back to the built-in per-stack fixes so `--scan-only --setup` still
+        // does something useful for free. They only know the shapes they were written for, which is
+        // exactly why the model is preferred when one is available.
+        if (model is null)
+        {
+            if (!request.Setup || result.Setup.IsReady) return;
 
-        foreach (var done in adapter.ApplySetup(request, resourceDir, _log))
-            result.SetupApplied.Add(done);
+            _log.Info("Setting up localization (built-in checks; no model configured)...");
 
-        result.Setup = adapter.InspectSetup(request, resourceDir);
+            foreach (var done in adapter.ApplySetup(request, resourceDir, _log))
+                result.SetupApplied.Add(done);
+
+            result.Setup = adapter.InspectSetup(request, resourceDir);
+            ReportSetup(result.Setup, request);
+            return;
+        }
+
+        // Planning costs a request, so it is spent only when it changes what happens next: a rewrite
+        // that could break the app, or an explicit request to set the project up.
+
+        var context = adapter.DescribeSetupContext(request, resourceDir);
+        if (context.Files.Count == 0) return;
+
+        SetupPlan plan;
+        try
+        {
+            plan = await new SetupPlanner(model, request, _log).PlanAsync(context, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Deliberately broad: the built-in checks have already run and the translations are the
+            // point of the run. Losing the richer answer is a downgrade, not a reason to throw away
+            // work the user has paid for.
+            _log.Warn($"Could not inspect the project's build files ({ex.Message}); " +
+                      "falling back to the built-in checks.");
+            return;
+        }
+
+        if (request.Setup && plan.Steps.Any(s => s.IsAutomatic))
+        {
+            _log.Info("Setting up localization...");
+
+            var outcome = SetupApplier.Apply(plan, context, request, _log);
+
+            foreach (var step in outcome.Applied)
+                result.SetupApplied.Add(new SetupStep(step.Title, step.Detail, step.Severity, Automatic: true));
+
+            // Applied steps are no longer outstanding; everything else still is.
+            plan.Steps = plan.Steps.Except(outcome.Applied).ToList();
+        }
+
+        result.Setup = new LocalizationSetup(plan.Steps
+            .Select(s => new SetupStep(s.Title, s.Detail, s.Severity, s.IsAutomatic))
+            .ToList());
+
         ReportSetup(result.Setup, request);
     }
 
